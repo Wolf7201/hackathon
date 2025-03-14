@@ -14,12 +14,10 @@ translation_tokenizer = MarianTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en
 translation_model = MarianMTModel.from_pretrained("Helsinki-NLP/opus-mt-en-ru")
 yolo_model = YOLO("yolov8n.pt")
 
-
 def translate_text(text: str) -> str:
     tokens = translation_tokenizer(text, return_tensors="pt", padding=True)
     out = translation_model.generate(**tokens)
     return translation_tokenizer.decode(out[0], skip_special_tokens=True)
-
 
 @app.post("/upload/")
 async def process_image(image: UploadFile = File(...)):
@@ -39,15 +37,14 @@ async def process_image(image: UploadFile = File(...)):
                 names.append(yolo_model.names[int(box.cls)])
         detected_objects = translate_text(", ".join(sorted(set(names))))
 
-        # Объединение результатов
-        combined_description = f"{translated_caption}. Обнаруженные объекты: {detected_objects}."
-
-        return JSONResponse({"metadata": combined_description})
+        return JSONResponse({
+            "description": translated_caption,
+            "detected_objects": detected_objects,
+            "text": "Тут будет распознанный текст"
+        })
     except Exception as e:
         raise HTTPException(500, f"Ошибка обработки изображения: {e}")
 
-
 if __name__ == "__main__":
     import uvicorn
-
     uvicorn.run(app, host="0.0.0.0", port=8001)

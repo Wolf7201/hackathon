@@ -1,5 +1,4 @@
 from django.contrib import admin
-from django.contrib import admin
 from django.utils.safestring import mark_safe
 from .models import Image
 import csv
@@ -7,9 +6,9 @@ from django.http import HttpResponse
 
 
 class ImageAdmin(admin.ModelAdmin):
-    list_display = ("id", "thumbnail", "upload_date", "short_metadata")  # Что показывать в списке
+    list_display = ("id", "thumbnail", "upload_date", "short_description", "short_detected_objects", "text")  # Что показывать в списке
     list_filter = ("upload_date",)  # Фильтр по дате
-    search_fields = ("metadata",)  # Поиск по метаданным
+    search_fields = ("description", "detected_objects", "text")  # Поиск по описанию, объектам и тексту
     readonly_fields = ("upload_date", "image_preview")  # Только для просмотра
     actions = ["export_as_csv"]  # Добавляем экспорт в CSV
 
@@ -21,11 +20,17 @@ class ImageAdmin(admin.ModelAdmin):
 
     thumbnail.short_description = "Preview"
 
-    def short_metadata(self, obj):
-        """Обрезаем метаданные до 50 символов для удобного отображения."""
-        return obj.metadata[:50] + "..." if obj.metadata else "No Metadata"
+    def short_description(self, obj):
+        """Обрезаем описание до 50 символов."""
+        return obj.description[:50] + "..." if obj.description else "No Description"
 
-    short_metadata.short_description = "Metadata"
+    short_description.short_description = "Description"
+
+    def short_detected_objects(self, obj):
+        """Обрезаем список объектов до 50 символов."""
+        return obj.detected_objects[:50] + "..." if obj.detected_objects else "No Objects"
+
+    short_detected_objects.short_description = "Detected Objects"
 
     def image_preview(self, obj):
         """Отображение полного изображения в детальном просмотре."""
@@ -40,13 +45,12 @@ class ImageAdmin(admin.ModelAdmin):
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = 'attachment; filename="images.csv"'
         writer = csv.writer(response)
-        writer.writerow(["ID", "Upload Date", "Metadata"])
+        writer.writerow(["ID", "Upload Date", "Description", "Detected Objects", "Text"])
         for obj in queryset:
-            writer.writerow([obj.id, obj.upload_date, obj.metadata])
+            writer.writerow([obj.id, obj.upload_date, obj.description, obj.detected_objects, obj.text])
         return response
 
     export_as_csv.short_description = "Export selected to CSV"
 
 
 admin.site.register(Image, ImageAdmin)
-

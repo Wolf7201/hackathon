@@ -19,8 +19,8 @@ class ImageViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPagination
     # Добавляем поддержку поиска
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
-    filterset_fields = ['metadata']  # Фильтрация по точному значению
-    search_fields = ['metadata']  # Поиск по частичному совпадению
+    filterset_fields = ['description']  # Фильтрация по точному значению
+    search_fields = ['description']  # Поиск по частичному совпадению
 
     def perform_create(self, serializer):
         """При создании изображения получаем метаданные и записываем их в модель."""
@@ -32,10 +32,12 @@ class ImageViewSet(viewsets.ModelViewSet):
                 files = {"image": img_file}
                 response = requests.post(API_URL, files=files)
 
-            # Обновляем метаданные
+            # Обновляем данные
             if response.status_code == 200:
-                metadata = response.json().get("metadata", "No metadata received")
-                instance.metadata = metadata
+                data = response.json()
+                instance.description = data.get("description", "No description received")
+                instance.detected_objects = data.get("detected_objects", "No objects detected")
+                instance.text = data.get("text", "No translated text")
                 instance.save()
 
         except RequestException as e:
